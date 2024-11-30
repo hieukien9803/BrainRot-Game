@@ -55,10 +55,10 @@ pygame.init()
 
 # LOAD SOUND
 pygame.mixer.init()
-button_sound = pygame.mixer.Sound("asset/button.wav")
-drawcard_sound = pygame.mixer.Sound("asset/drawcard.wav")
-placingcard_sound = pygame.mixer.Sound("asset/placingcard.wav")
-end_sound = pygame.mixer.Sound("asset/sunshine.wav")
+button_sound = pygame.mixer.Sound("asset/audio/button.wav")
+drawcard_sound = pygame.mixer.Sound("asset/audio/drawcard.wav")
+placingcard_sound = pygame.mixer.Sound("asset/audio/placingcard.wav")
+end_sound = pygame.mixer.Sound("asset/audio/sunshine.wav")
 end_sound.set_volume(1.0)
 
 # Constants
@@ -75,8 +75,11 @@ GREEN = (50, 255, 50)
 DRAW_BUTTON_WIDTH, DRAW_BUTTON_HEIGHT = 150, 50
 DRAW_BUTTON_COLOR = (200, 200, 0)
 DRAW_BUTTON_HOVER_COLOR = (255, 255, 0)
-# Load images for the cards
 
+delay_duration = random.randint(1000, 3000)  # Random delay in milliseconds
+start_time = pygame.time.get_ticks()
+
+# Load images for the cards
 card_images = {
     "shower_card": "asset/card/shower_card.png",
     "touchgrass_card": "asset/card/touchgrass_card.png",
@@ -188,7 +191,7 @@ def draw_ui():
     for i, card in enumerate(player_cards_played):
         x = WIDTH // 2 - len(player_cards_played) * (CARD_WIDTH + MARGIN) // 2 + i * (CARD_WIDTH + MARGIN)
         pygame.draw.rect(screen, BLUE, (x, y, CARD_WIDTH, CARD_HEIGHT))
-        card_text = font.render(str(card.t), True, WHITE)
+        card_text = font.render(str(card.n), True, WHITE)
         screen.blit(card_text, (x + 10, y + CARD_HEIGHT // 2 - 10))
 
     for i, card in enumerate(bot_cards_played):
@@ -211,39 +214,49 @@ def draw_ui():
     return draw_button_rect
 
 def handle_draw_card():
-    """Handle the draw card action."""
+    """Handle the draw card action and immediately update the screen."""
     global player_turn
-    new_card = random.choice(deck)
-    you_nerd.cards.append(new_card)
+    if len(deck) > 0:
+        new_card = random.choice(deck)
+        you_nerd.cards.append(new_card)
+        deck.remove(new_card)  # Remove drawn card from deck
     pygame.mixer.Sound.play(drawcard_sound)
+    draw_ui()  # Redraw UI immediately after drawing a card
+    pygame.display.flip()
     player_turn = False
 
-def handle_player_turn(pos):
-    """Handle the player's turn and card click to show details."""
-    global player_turn, selected_card
+def play_card(card):
+    """Function to simulate playing a card and updating the screen."""
+    global player_turn
+    if card in you_nerd.cards:
+        player_cards_played.append(card)
+        you_nerd.cards.remove(card)  # Remove card from player's hand
+        if card.t == "damage":
+            bot_chad.health -= card.d
+        elif card.t == "heal":
+            you_nerd.health = min(10, you_nerd.health + card.h)
+        draw_ui()  # Redraw UI immediately after playing a card
+        pygame.display.flip()
+        player_turn = False
 
-    y = HEIGHT - CARD_HEIGHT - 100
-    for i, card in enumerate(you_nerd.cards):
-        x = MARGIN + i * (CARD_WIDTH + MARGIN)
-        if x < pos[0] < x + CARD_WIDTH and y < pos[1] < y + CARD_HEIGHT:
-            # If a card is clicked, show its image
-            selected_card = card
-            return  # Exit after selecting the card to show its details
+import time
 
 def handle_bot_turn():
-    """Handle the bot's turn."""
+    """Handle the bot's turn with a random delay."""
     global player_turn
+    time.sleep(random.randint(1, 3))  # Random delay between 1 to 3 seconds
 
-    if bot_chad.cards:
+    if len(bot_chad.cards) > 0:
         card = random.choice(bot_chad.cards)
         bot_cards_played.append(card)
+        bot_chad.cards.remove(card)
         if card.t == "damage":
             you_nerd.health -= card.d
         elif card.t == "heal":
             bot_chad.health = min(10, bot_chad.health + card.h)
-        bot_chad.cards.remove(card)
+    draw_ui()  # Redraw UI immediately after bot's action
+    pygame.display.flip()
     player_turn = True
-
 
 def display_card_details(card):
     """Display detailed information about a card."""
@@ -265,7 +278,8 @@ def display_card_details(card):
     screen.blit(damage_text, (detail_x + 20, detail_y + 60))
     screen.blit(heal_text, (detail_x + 20, detail_y + 100))
     screen.blit(type_text, (detail_x + 20, detail_y + 140))
-
+    draw_ui()
+    pygame.display.flip()
 
 def handle_card_hover(pos):
     """Handle mouse hover over a card."""
@@ -278,12 +292,29 @@ def handle_card_hover(pos):
 
 
 def handle_card_click(pos):
-    """Handle clicking on a card to view its details."""
-    y = HEIGHT - CARD_HEIGHT - 100
+    """
+    Handle clicking on a card and return the card being clicked (selected).
+
+    Args:
+        pos (tuple): The (x, y) position of the mouse click.
+
+    Returns:
+        Card: The selected card if a card is clicked, otherwise None.
+    """
+    # Define the y-coordinate range for the player's cards
+    y_start = HEIGHT - CARD_HEIGHT - 100
+    y_end = y_start + CARD_HEIGHT
+
+    # Iterate through the player's cards to check if the click is within a card's bounds
     for i, card in enumerate(you_nerd.cards):
-        x = MARGIN + i * (CARD_WIDTH + MARGIN)
-        if x < pos[0] < x + CARD_WIDTH and y < pos[1] < y + CARD_HEIGHT:
-            return card
+        x_start = MARGIN + i * (CARD_WIDTH + MARGIN)
+        x_end = x_start + CARD_WIDTH
+
+        # Check if the click position is within the current card's bounds
+        if x_start <= pos[0] <= x_end and y_start <= pos[1] <= y_end:
+            return card  # Return the clicked card
+
+    # If no card is clicked, return None
     return None
 
 
@@ -293,6 +324,8 @@ player_turn = True
 game_over = False  # New state to handle the fade effect
 hovered_card = None
 clicked_card = None  # Track the clicked card to display details
+bot_action_ready = False
+
 
 while True:
     if not game_running and not game_over:
@@ -308,7 +341,7 @@ while True:
     elif game_running and not game_over:
         # Main game logic
         mouse_pos = pygame.mouse.get_pos()
-        hovered_card = handle_card_hover(mouse_pos)  # Update hovered card
+        hovered_card = handle_card_hover(mouse_pos)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -319,11 +352,19 @@ while True:
                 if player_turn:
                     if draw_button_rect.collidepoint(event.pos):
                         handle_draw_card()
+                        draw_ui()  # Update the UI immediately after drawing a card
+                        pygame.display.flip()
                     else:
-                        clicked_card = handle_card_click(event.pos)  # Set the clicked card
+                        if event.button == 1:  # Left click
+                            print("LEFT CLICKED")
+                            clicked_card = handle_card_click(event.pos)
+                            play_card(clicked_card)
+                        if event.button == 3:  # Right click
+                            print("RIGHT CLICKED")
+                            clicked_card = handle_card_click(event.pos)
+                            display_card_details(clicked_card)
 
         if not player_turn:
-            pygame.time.delay(1000)  # Simulate thinking time
             handle_bot_turn()
 
         # Check if the game ends
@@ -332,19 +373,13 @@ while True:
             start_ticks = pygame.time.get_ticks()  # Record the fade start time
             end_sound.play()
 
-        draw_ui()
-
         # If there's a hovered card, display a tooltip
         if hovered_card:
             pygame.draw.rect(screen, BLACK, (mouse_pos[0] + 10, mouse_pos[1] + 10, 120, 60))
             pygame.draw.rect(screen, WHITE, (mouse_pos[0] + 12, mouse_pos[1] + 12, 116, 56))
             card_name_text = font.render(hovered_card.n, True, BLACK)
             screen.blit(card_name_text, (mouse_pos[0] + 15, mouse_pos[1] + 15))
-
-        # If there's a clicked card, display detailed information
-        if clicked_card:
-            display_card_details(clicked_card)
-
+        draw_ui()
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -373,3 +408,5 @@ while True:
 
         pygame.display.flip()
         clock.tick(60)  # Limit frame rate
+
+
