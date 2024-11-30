@@ -28,17 +28,17 @@ class Player:
 shower_card = Card("shower", 10, 0, "damage")
 touchgrass_card = Card("touchgrass", 1, 0, "damage")
 deodorant_card = Card("deodorant", 2, 0, "damage")
-gpt_card = Card("AI", 2, 0, "damage")
-light_mode_card = Card("light mode", 1, 0, "damage")
-talktowoman_card = Card("talk to woman", 4, 0, "damage")
+gpt_card = Card("gpt", 2, 0, "damage")
+light_mode_card = Card("lightmode", 1, 0, "damage")
+talktowoman_card = Card("talktowoman", 4, 0, "damage")
 if_card = Card("if", 1, 0, "damage")
-timecomplex_card = Card("time complex", 3, 0, "damage")
-failunittest_card = Card("fail unittest", 3, 0, "damage")
-centerdiv_card = Card("center div", 3, 0,"damage")
+timecomplex_card = Card("timecomplex", 3, 0, "damage")
+failunittest_card = Card("failunittest", 3, 0, "damage")
+centerdiv_card = Card("centerdiv", 3, 0,"damage")
 # support card
-darkmode_card = Card("dark mode", 0, 4, "heal")
+darkmode_card = Card("darkmode", 0, 4, "heal")
 python_card = Card("python", 0, 6, "heal")
-energydrink_card = Card("energy drink", 0, 2, "heal")
+energydrink_card = Card("energydrink", 0, 2, "heal")
 
 deck = [shower_card, touchgrass_card, deodorant_card, gpt_card, light_mode_card,
         talktowoman_card, if_card, timecomplex_card, failunittest_card,
@@ -46,7 +46,7 @@ deck = [shower_card, touchgrass_card, deodorant_card, gpt_card, light_mode_card,
         darkmode_card, python_card, energydrink_card]
 # set up players
 you_nerd = Player(card=random.sample(deck, 6))
-bot_chad = Player(card=random.sample(deck, 6))
+bot_chad = Player(card=random.sample(deck, 13))
 player_cards_played = []
 bot_cards_played = []
 
@@ -59,10 +59,12 @@ button_sound = pygame.mixer.Sound("asset/audio/button.wav")
 drawcard_sound = pygame.mixer.Sound("asset/audio/drawcard.wav")
 placingcard_sound = pygame.mixer.Sound("asset/audio/placingcard.wav")
 end_sound = pygame.mixer.Sound("asset/audio/sunshine.wav")
+drinking_sound = pygame.mixer.Sound("asset/audio/drink.wav")
 end_sound.set_volume(1.0)
 
 # Constants
-WIDTH, HEIGHT = 1400, 800
+WIDTH, HEIGHT = 1600, 900
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 CARD_WIDTH, CARD_HEIGHT = 100, 150
 MARGIN = 20
 FPS = 60
@@ -143,7 +145,7 @@ selected_card = None
 def draw_ui():
     """Draw the game UI with hover effect and card click details."""
     global selected_card
-    screen.fill(WHITE)
+    screen.fill((0, 0, 0))
 
     # Draw health
     player_health_text = big_font.render(f"Player Health: {you_nerd.health}", True, BLUE)
@@ -229,12 +231,16 @@ def play_card(card):
     """Function to simulate playing a card and updating the screen."""
     global player_turn
     if card in you_nerd.cards:
+        pygame.mixer.Sound.play(placingcard_sound)
         player_cards_played.append(card)
         you_nerd.cards.remove(card)  # Remove card from player's hand
         if card.t == "damage":
             bot_chad.health -= card.d
         elif card.t == "heal":
             you_nerd.health = min(10, you_nerd.health + card.h)
+            if card.n == "energydrink":
+                pygame.mixer.Sound.play(drinking_sound)
+
         draw_ui()  # Redraw UI immediately after playing a card
         pygame.display.flip()
         player_turn = False
@@ -248,6 +254,7 @@ def handle_bot_turn():
 
     if len(bot_chad.cards) > 0:
         card = random.choice(bot_chad.cards)
+        pygame.mixer.Sound.play(placingcard_sound)
         bot_cards_played.append(card)
         bot_chad.cards.remove(card)
         if card.t == "damage":
@@ -259,27 +266,35 @@ def handle_bot_turn():
     player_turn = True
 
 def display_card_details(card):
-    """Display detailed information about a card."""
-    detail_width, detail_height = 300, 200
-    detail_x = WIDTH // 2 - detail_width // 2
-    detail_y = HEIGHT // 2 - detail_height // 2
+    """Render the card image on top of the gameplay and return to the game on any click."""
+    card_image_path = card_images.get(f"{card.n}_card", None)
+    if card_image_path:
+        try:
+            # Load and scale the card image
+            card_image = pygame.image.load(card_image_path)
+            card_image = pygame.transform.scale(card_image, (CARD_WIDTH * 3.4, CARD_HEIGHT * 3.4))  # Scale the image
 
-    # Draw a background rectangle for the details
-    pygame.draw.rect(screen, BLACK, (detail_x, detail_y, detail_width, detail_height))
-    pygame.draw.rect(screen, WHITE, (detail_x + 5, detail_y + 5, detail_width - 10, detail_height - 10))
+            # Calculate position to center the image on the screen
+            x = 620
+            y = 100
 
-    # Display card details (Name, Damage, Heal, Type)
-    name_text = font.render(f"Name: {card.n}", True, BLACK)
-    damage_text = font.render(f"Damage: {card.d}", True, BLACK)
-    heal_text = font.render(f"Heal: {card.h}", True, BLACK)
-    type_text = font.render(f"Type: {card.t}", True, BLACK)
+            # Render the card image on top of the gameplay screen
+            screen.blit(card_image, (x, y))
+            pygame.display.flip()  # Update the screen with the card image
 
-    screen.blit(name_text, (detail_x + 20, detail_y + 20))
-    screen.blit(damage_text, (detail_x + 20, detail_y + 60))
-    screen.blit(heal_text, (detail_x + 20, detail_y + 100))
-    screen.blit(type_text, (detail_x + 20, detail_y + 140))
-    draw_ui()
-    pygame.display.flip()
+            # Wait for any mouse click to return to the game
+            while True:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        exit()
+                    if event.type == pygame.MOUSEBUTTONDOWN:  # Exit on any mouse click
+                        return  # Exit the function and resume gameplay
+        except pygame.error as e:
+            print(f"Error loading or displaying image: {e}")
+    else:
+        print(f"No image found for card: {card.n}")
+
 
 def handle_card_hover(pos):
     """Handle mouse hover over a card."""
@@ -362,7 +377,9 @@ while True:
                         if event.button == 3:  # Right click
                             print("RIGHT CLICKED")
                             clicked_card = handle_card_click(event.pos)
-                            display_card_details(clicked_card)
+                            if clicked_card:
+                                # print(clicked_card.n)
+                                display_card_details(clicked_card)
 
         if not player_turn:
             handle_bot_turn()
