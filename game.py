@@ -25,20 +25,20 @@ class Player:
 
 
 # create game object bruhh
-shower_card = Card("shower_card", 2, 0, "damage")
-touchgrass_card = Card("touchgrass_card", 1, 0, "damage")
-deodorant_card = Card("deodorant_card", 2, 0, "damage")
-gpt_card = Card("gpt_card", 1, 0, "damage")
-light_mode_card = Card("light_mode_card", 1, 0, "damage")
-talktowoman_card = Card("talktowoman_card", 2, 0, "damage")
-if_card = Card("if_card", 1, 0, "damage")
-timecomplex_card = Card("timecomplex_card", 2, 0, "damage")
-failunittest_card = Card("failunittest_card", 3, 0, "damage")
-centerdiv_card = Card("centerdiv_card", 2, 0,"damage")
+shower_card = Card("shower", 10, 0, "damage")
+touchgrass_card = Card("touchgrass", 1, 0, "damage")
+deodorant_card = Card("deodorant", 2, 0, "damage")
+gpt_card = Card("AI", 2, 0, "damage")
+light_mode_card = Card("light mode", 1, 0, "damage")
+talktowoman_card = Card("talk to woman", 4, 0, "damage")
+if_card = Card("if", 1, 0, "damage")
+timecomplex_card = Card("time complex", 3, 0, "damage")
+failunittest_card = Card("fail unittest", 3, 0, "damage")
+centerdiv_card = Card("center div", 3, 0,"damage")
 # support card
-darkmode_card = Card("darkmode_card", 0, 2, "heal")
-python_card = Card("python_card", 0, 3, "heal")
-energydrink_card = Card("energydrink_card", 0, 2, "heal")
+darkmode_card = Card("dark mode", 0, 4, "heal")
+python_card = Card("python", 0, 6, "heal")
+energydrink_card = Card("energy drink", 0, 2, "heal")
 
 deck = [shower_card, touchgrass_card, deodorant_card, gpt_card, light_mode_card,
         talktowoman_card, if_card, timecomplex_card, failunittest_card,
@@ -78,19 +78,19 @@ DRAW_BUTTON_HOVER_COLOR = (255, 255, 0)
 # Load images for the cards
 
 card_images = {
-    "shower_card": "assets/shower_card.png",
-    "touchgrass_card": "assets/touchgrass_card.png",
-    "deodorant_card": "assets/deodorant_card.png",
-    "gpt_card": "assets/gpt_card.png",
-    "light_mode_card": "assets/light_mode_card.png",
-    "talktowoman_card": "assets/talktowoman_card.png",
-    "if_card": "assets/if_card.png",
-    "timecomplex_card": "assets/timecomplex_card.png",
-    "failunittest_card": "assets/failunittest_card.png",
-    "centerdiv_card": "assets/centerdiv_card.png",
-    "darkmode_card": "assets/darkmode_card.png",
-    "python_card": "assets/python_card.png",
-    "energydrink_card": "assets/energydrink_card.png"
+    "shower_card": "asset/card/shower_card.png",
+    "touchgrass_card": "asset/card/touchgrass_card.png",
+    "deodorant_card": "asset/card/deodorant_card.png",
+    "gpt_card": "asset/card/gpt_card.png",
+    "lightmode_card": "asset/card/lightmode_card.png",
+    "talktowoman_card": "asset/card/talktowoman_card.png",
+    "if_card": "asset/card/if_card.png",
+    "timecomplex_card": "asset/card/timecomplex_card.png",
+    "failunittest_card": "asset/card/failunittest_card.png",
+    "centerdiv_card": "asset/card/centerdiv_card.png",
+    "darkmode_card": "asset/card/darkmode_card.png",
+    "python_card": "asset/card/python_card.png",
+    "energydrink_card": "asset/card/energydrink_card.png"
 }
 
 # Initialize screen
@@ -188,7 +188,7 @@ def draw_ui():
     for i, card in enumerate(player_cards_played):
         x = WIDTH // 2 - len(player_cards_played) * (CARD_WIDTH + MARGIN) // 2 + i * (CARD_WIDTH + MARGIN)
         pygame.draw.rect(screen, BLUE, (x, y, CARD_WIDTH, CARD_HEIGHT))
-        card_text = font.render(str(card), True, WHITE)
+        card_text = font.render(str(card.t), True, WHITE)
         screen.blit(card_text, (x + 10, y + CARD_HEIGHT // 2 - 10))
 
     for i, card in enumerate(bot_cards_played):
